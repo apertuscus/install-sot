@@ -351,6 +351,14 @@ create_local_db()
   fi
 
   if [ "${PRIVATE_URI}" != "" ]; then
+      if [ "$ROS_VERSION" == "groovy" ]; then
+	  inst_array[index]="install_ros_ws_package urdf_parser_py"
+	  let "index= $index + 1"
+	  inst_array[index]="install_ros_ws_package robot_capsule_urdf"
+	  let "index= $index + 1"
+	  inst_array[index]="install_ros_ws_package xml_reflection"
+	  let "index= $index + 1"
+      fi
     inst_array[index]="install_ros_ws_package hrp2_14_description"
     let "index= $index + 1"
   fi
@@ -557,8 +565,12 @@ compare_versions ()
 
 install_apt_dependencies()
 {
-    ${SUDO} ${APT_GET_UPDATE}
-    ${SUDO} ${APT_GET_INSTALL} \
+	if [ $UPDATE_PACKAGE -eq 0 ]; then
+	  return
+	fi
+
+	${SUDO} ${APT_GET_UPDATE}
+	${SUDO} ${APT_GET_INSTALL} \
 	build-essential \
 	cmake pkg-config git \
 	doxygen doxygen-latex \
@@ -572,6 +584,10 @@ install_apt_dependencies()
 
 install_git()
 {
+    if [ $UPDATE_PACKAGE -eq 0 ]; then
+        return
+    fi
+
     #checking whether git is already installed.
     ${GIT} --version &> /dev/null
     if [ $? -eq 0 ];  then
@@ -605,6 +621,10 @@ install_git()
 
 install_doxygen()
 {
+    if [ $UPDATE_PACKAGE -eq 0 ]; then
+        return
+    fi
+
     #checking whether doxygen is already installed.
     ${DOXYGEN} --version &> /dev/null
     if [ $? -eq 0 ];  then
@@ -749,6 +769,10 @@ install_python_pkg()
 
 install_ros_legacy()
 {
+    if [ $UPDATE_PACKAGE -eq 0 ]; then
+        return
+    fi
+
     ${SUDO} sh -c 'echo "deb http://packages.ros.org/ros/ubuntu '$DISTRIB_CODENAME' main" > /etc/apt/sources.list.d/ros-latest.list'
     ${SUDO} chmod 644 /etc/apt/sources.list.d/ros-latest.list
     wget http://packages.ros.org/ros.key -O - | ${SUDO} apt-key add -
@@ -778,6 +802,8 @@ install_config()
 {
     # get python site packages path
     PYTHON_SITELIB=`python -c "import sys, os; print os.sep.join(['lib', 'python' + sys.version[:3], 'site-packages'])"`
+    # get python dist packages path
+    PYTHON_DISTLIB=`python -c "import sys, os; print os.sep.join(['lib', 'python' + sys.version[:3], 'dist-packages'])"`
 
     # get dpkg version
     dpkg_version=`dpkg-architecture --version | head -n 1 | awk '{print $4}'`
@@ -800,7 +826,7 @@ install_config()
     echo "export ROBOT=\"$ROBOT\""                  >> $CONFIG_FILE
     echo "export ROS_ROOT=/opt/ros/$ROS_DISTRO"     >> $CONFIG_FILE
     echo "export PATH=\$ROS_ROOT/bin:\$PATH"        >> $CONFIG_FILE
-    echo "export PYTHONPATH=\$ROS_ROOT/core/roslib/src:\$ROS_INSTALL_DIR/$PYTHON_SITELIB:\$PYTHONPATH" >> $CONFIG_FILE
+    echo "export PYTHONPATH=\$ROS_ROOT/core/roslib/src:\$ROS_INSTALL_DIR/$PYTHON_SITELIB:\$ROS_INSTALL_DIR/$PYTHON_DISTLIB:\$PYTHONPATH" >> $CONFIG_FILE
     echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig:/opt/grx/lib/pkgconfig"     >> $CONFIG_FILE
     echo "export ROS_PACKAGE_PATH=\$ROS_WS_DIR:\$ROS_WS_DIR/stacks/hrp2:\$ROS_WS_DIR/stacks/ethzasl_ptam:/opt/ros/${ROS_DISTRO}/stacks:/opt/ros/\${ROS_DISTRO}/stacks/ros_realtime:\$ROS_PACKAGE_PATH" >> $CONFIG_FILE
     echo "export LD_LIBRARY_PATH=\$ROS_INSTALL_DIR/lib/plugin:\$LD_LIBRARY_PATH" >> $CONFIG_FILE
@@ -810,12 +836,17 @@ install_config()
         echo "export LD_LIBRARY_PATH=\$ROS_INSTALL_DIR/lib/$arch_path:\$LD_LIBRARY_PATH" >> $CONFIG_FILE
     fi;
     echo "export ROS_MASTER_URI=http://localhost:11311" >> $CONFIG_FILE
+    source $CONFIG_FILE
 }
 
 
 # install all ros stack required
 install_ros_ws()
 {
+    if [ $UPDATE_PACKAGE -eq 0 ]; then
+        return
+    fi
+
     # The master branch is for the current ROS development release
     # (Hydro). All the oldest releases are named by their release name:
     # fuerte, groovy, etc.
@@ -886,11 +917,16 @@ install_ros_ws_package()
 	-DSMALLMATRIX=jrl-mathtools -DROBOT=${ROBOT} \
 	-DCMAKE_CXX_FLAGS="$local_cflags" ..
     ${MAKE} ${MAKE_OPTS}
-
-	if [ "$1" == "dynamic_graph_bridge" ] || [ "$1" == "openhrp_bridge" ]; then
+    
+   if [ "$ROS_VERSION" == "groovy" ]; then
+    	if [ "$1" == "dynamic_graph_bridge" ] || [ "$1" == "openhrp_bridge" ] || [ "$1" == "urdf_parser_py" ] || [ "$1" == "robot_capsule_urdf" ] || [ "$1" == "xml_reflection" ]; then
   	  ${MAKE} install
 	fi
-
+   else
+    	if [ "$1" == "dynamic_graph_bridge" ] || [ "$1" == "openhrp_bridge" ] ; then
+  	  ${MAKE} install
+	fi
+   fi
 }
 
 update_ros_setup()
@@ -929,7 +965,6 @@ if [[ $comp -ge 0 ]];  then
     export PKG_CONFIG_PATH="${INSTALL_DIR}/lib/$arch_path/pkgconfig":$PKG_CONFIG_PATH
   fi;
 fi;
-
 
 run_instructions()
 {
