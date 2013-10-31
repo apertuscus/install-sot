@@ -463,7 +463,16 @@ create_local_db()
       let "index= $index + 1"
     fi
 
+
+
   fi
+
+#GIANNI
+
+  inst_array[index]="install_pkg $SRC_DIR/sot sot-expression-graph	 ${IDH_PRIVATE_URI}"
+  let "index= $index + 1"
+
+#END GIANNI
 
   for ((lindex=0; lindex<${#inst_array[@]} ; lindex++ ))
   do
@@ -838,6 +847,8 @@ install_ros_ws_package()
     if [ $COMPILE_PACKAGE -eq 0 ]; then
         return
     fi
+    echo "** Displaying ROS_PACKAGE_PATH"
+    echo $ROS_PACKAGE_PATH
 
     echo "### Install ros package $1"
     # Go to the rospackage build directory.
@@ -895,6 +906,10 @@ update_ros_setup()
   if [ -f $SOT_ROOT_DIR/setup.bash ]; then
     source $SOT_ROOT_DIR/setup.bash
   fi
+#GIANNI
+export  ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/opt/ros/groovy/share:/opt/ros/groovy/stacks
+export  ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/home/gianni/Groovy_exp_graph/expressiongraph
+#END GIANNI
 }
 
 
