@@ -945,6 +945,7 @@ update_ros_setup()
 #GIANNI
 export  ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/opt/ros/groovy/share:/opt/ros/groovy/stacks
 export  ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/home/gianni/Groovy_exp_graph/expressiongraph
+export  ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/home/gianni/Groovy_exp_graph/expressiongraph_tf
 #END GIANNI
 }
 
